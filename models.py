@@ -42,7 +42,8 @@ class RoomSchedule(Base):
     __tablename__ = 'room_schedules'
     id = Column(Integer, primary_key=True, autoincrement=True)
     room_id = Column(String, ForeignKey('rooms.room_id'))
-    day_of_week = Column(Integer) # 0=Monday, 6=Sunday
+    day_of_week = Column(Integer, nullable=True) # 0=Monday, 6=Sunday
+    specific_date = Column(String, nullable=True) # YYYY-MM-DD
     start_time = Column(String)
     end_time = Column(String)
     subject_name = Column(String)

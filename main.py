@@ -13,6 +13,13 @@ class PhoneUpdate(BaseModel):
 
 app = FastAPI()
 
+# --- เพิ่มโค้ดส่วนนี้เพื่อบังคับสร้างโฟลเดอร์หากยังไม่มี ---
+os.makedirs("photo", exist_ok=True)
+os.makedirs("uploads/student_cards", exist_ok=True)
+os.makedirs("uploads/profiles", exist_ok=True)
+os.makedirs("templates", exist_ok=True) # เผื่อโฟลเดอร์ templates หายไปด้วย
+# ----------------------------------------------------
+
 # เชื่อมต่อโฟลเดอร์รูปภาพ
 app.mount("/photo", StaticFiles(directory="photo"), name="photo")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")

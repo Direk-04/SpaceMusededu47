@@ -8,13 +8,15 @@ class User(Base):
     __tablename__ = 'users'
     email = Column(String, primary_key=True)
     password = Column(String)
-    student_id = Column(String)
+    student_id = Column(String, unique=True)
     name = Column(String)
     year = Column(String)
     status = Column(String)
     faculty = Column(String)
     major = Column(String)
     phone = Column(String)
+    profile_pic_url = Column(String)
+    student_card_url = Column(String)
     
 class Room(Base):
     __tablename__ = 'rooms'
@@ -33,6 +35,17 @@ class Booking(Base):
     start_time = Column(String)
     end_time = Column(String)
     band_type = Column(String)
+    purpose = Column(String)
+    teacher_name = Column(String) # For Mini Hall
+
+class RoomSchedule(Base):
+    __tablename__ = 'room_schedules'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    room_id = Column(String, ForeignKey('rooms.room_id'))
+    day_of_week = Column(Integer) # 0=Monday, 6=Sunday
+    start_time = Column(String)
+    end_time = Column(String)
+    subject_name = Column(String)
 
 engine = create_engine('sqlite:///music_room.db')
 Base.metadata.create_all(engine)

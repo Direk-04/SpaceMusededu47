@@ -8,6 +8,8 @@ import shutil
 import os
 import datetime
 
+BANGKOK_TZ = datetime.timezone(datetime.timedelta(hours=7))
+
 class PhoneUpdate(BaseModel):
     student_id: str
     phone: str
@@ -164,7 +166,7 @@ def get_student_stats(student_id: str):
             fav_room = room.room_name if room else fav_room_id
 
         # ดึงการจองครั้งถัดไป (Upcoming)
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(BANGKOK_TZ)
         today_str = now.strftime("%Y-%m-%d")
         upcoming = session.query(Booking, Room.room_name).join(Room, Booking.room_id == Room.room_id).filter(
             Booking.student_id == sid,
@@ -195,7 +197,7 @@ def get_student_stats(student_id: str):
 def batch_availability(category: str, date: str, start: int = 7, end: int = 22):
     session = Session()
     try:
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(BANGKOK_TZ)
         current_date_str = now.strftime("%Y-%m-%d")
         current_h = now.hour
 
@@ -307,7 +309,7 @@ def batch_availability(category: str, date: str, start: int = 7, end: int = 22):
 def get_facility_status():
     session = Session()
     try:
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(BANGKOK_TZ)
         today_str = now.strftime("%Y-%m-%d")
         current_h = now.hour
         
@@ -444,6 +446,11 @@ def create_booking(data: BookingRequest):
         # เช็คว่ามีคาบเรียนที่ทับซ้อนหรือไม่
         new_start_h = int(data.start.split(":")[0])
         new_end_h = int(data.end.split(":")[0])
+
+        now = datetime.datetime.now(BANGKOK_TZ)
+        current_date_str = now.strftime("%Y-%m-%d")
+        if data.date < current_date_str or (data.date == current_date_str and new_start_h <= now.hour):
+            return {"status": "error", "message": "ไม่สามารถจองช่วงเวลาที่ผ่านไปแล้วได้"}
         
         schedules = session.query(RoomSchedule).filter(
             RoomSchedule.room_id == data.room_id,
@@ -649,7 +656,7 @@ def update_phone(data: PhoneUpdate):
 def get_admin_summary():
     session = Session()
     try:
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(BANGKOK_TZ)
         today_str = now.strftime("%Y-%m-%d")
         
         total_bookings_today = session.query(Booking).filter(Booking.booking_date == today_str).count()

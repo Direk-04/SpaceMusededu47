@@ -74,15 +74,17 @@ def get_rooms(category: str = None):
 def get_my_bookings(student_id: str):
     session = Session()
     try:
-        bookings = session.query(Booking, Room.room_name).join(Room, Booking.room_id == Room.room_id).filter(
-            Booking.student_id == student_id
-        ).all()
+        sid = student_id.strip()
+        print(f"DEBUG: Fetching for SID: '{sid}'")
+        bookings = session.query(Booking).filter(Booking.student_id == sid).all()
+        print(f"DEBUG: Found {len(bookings)} bookings")
         
         result = []
-        for b, room_name in bookings:
+        for b in bookings:
+            room = session.query(Room).filter(Room.room_id == b.room_id).first()
             result.append({
                 "booking_id": b.booking_id,
-                "room_name": room_name,
+                "room_name": room.room_name if room else f"Room {b.room_id}",
                 "room_id": b.room_id,
                 "date": b.booking_date,
                 "start": b.start_time,
@@ -116,7 +118,8 @@ def cancel_booking(data: CancelRequest):
 def get_student_stats(student_id: str):
     session = Session()
     try:
-        bookings = session.query(Booking).filter(Booking.student_id == student_id).all()
+        sid = student_id.strip()
+        bookings = session.query(Booking).filter(Booking.student_id == sid).all()
         total_bookings = len(bookings)
         total_hours = 0
         room_usage = {}
@@ -139,7 +142,7 @@ def get_student_stats(student_id: str):
         now = datetime.datetime.now()
         today_str = now.strftime("%Y-%m-%d")
         upcoming = session.query(Booking, Room.room_name).join(Room, Booking.room_id == Room.room_id).filter(
-            Booking.student_id == student_id,
+            Booking.student_id == sid,
             Booking.booking_date >= today_str
         ).order_by(Booking.booking_date.asc(), Booking.start_time.asc()).first()
 
@@ -212,13 +215,15 @@ def batch_availability(category: str, date: str, start: int = 7, end: int = 22):
 
         for r in rooms:
             room_slots = []
-            r_bookings = [b for b in all_bookings if b.room_id == r.room_id]
-            r_schedules = [s for s in all_schedules if s.room_id == r.room_id]
+            # ใช้ strip() เพื่อความแม่นยำในการเทียบ ID
+            rid_clean = r.room_id.strip()
+            r_bookings = [b for b in all_bookings if b.room_id.strip() == rid_clean]
+            r_schedules = [s for s in all_schedules if s.room_id.strip() == rid_clean]
 
             # คำนวณ Live Status
             is_busy_now = False
             # Check current schedule
-            curr_room_sch = [s for s in current_schedules if s.room_id == r.room_id]
+            curr_room_sch = [s for s in current_schedules if s.room_id.strip() == rid_clean]
             for sch in curr_room_sch:
                 try:
                     sh = int(sch.start_time.split(":")[0])
@@ -229,7 +234,7 @@ def batch_availability(category: str, date: str, start: int = 7, end: int = 22):
             
             if not is_busy_now:
                 # Check current booking
-                curr_room_book = [b for b in current_bookings if b.room_id == r.room_id]
+                curr_room_book = [b for b in current_bookings if b.room_id.strip() == rid_clean]
                 for b in curr_room_book:
                     try:
                         sh = int(b.start_time.split(":")[0])
@@ -253,7 +258,7 @@ def batch_availability(category: str, date: str, start: int = 7, end: int = 22):
                             sh = int(b.start_time.split(":")[0])
                             eh = int(b.end_time.split(":")[0])
                             if sh <= slot_h < eh:
-                                status = f"จองแล้ว: {b.band}"; break
+                                status = f"จองแล้ว: {b.band_type}"; break
                         except: continue
                 room_slots.append({"time": f"{slot_h:02d}:00", "status": status})
             
@@ -358,7 +363,7 @@ def check_availability(room_id: str, date: str, start: int = 7, end: int = 22):
                     b_start_h = int(b.start_time.split(":")[0])
                     b_end_h = int(b.end_time.split(":")[0])
                     if b_start_h <= slot_h < b_end_h:
-                        return f"จองแล้ว: {b.band}"
+                        return f"จองแล้ว: {b.band_type}"
                 except: continue
 
             return "ว่าง"
@@ -379,8 +384,10 @@ def create_booking(data: BookingRequest):
     session = Session()
     try:
         # ดึงข้อมูลผู้ใช้และห้อง
-        user = session.query(User).filter(User.student_id == data.student_id).first()
-        room = session.query(Room).filter(Room.room_id == data.room_id).first()
+        sid = data.student_id.strip()
+        rid = data.room_id.strip()
+        user = session.query(User).filter(User.student_id == sid).first()
+        room = session.query(Room).filter(Room.room_id == rid).first()
         
         if not user or not room:
             return {"status": "error", "message": "ไม่พบข้อมูลผู้ใช้หรือห้อง"}
@@ -417,6 +424,19 @@ def create_booking(data: BookingRequest):
             sch_end_h = int(sch.end_time.split(":")[0])
             if max(new_start_h, sch_start_h) < min(new_end_h, sch_end_h):
                 return {"status": "error", "message": f"ช่วงเวลานี้ถูกล็อกไว้สำหรับวิชาเรียน: {sch.subject_name}"}
+
+        # 2.1 เช็คการจองที่ทับซ้อน (Overlap Booking)
+        all_room_bookings = session.query(Booking).filter(
+            Booking.room_id == data.room_id,
+            Booking.booking_date == data.date
+        ).all()
+        for rb in all_room_bookings:
+            try:
+                rb_start_h = int(rb.start_time.split(":")[0])
+                rb_end_h = int(rb.end_time.split(":")[0])
+                if max(new_start_h, rb_start_h) < min(new_end_h, rb_end_h):
+                    return {"status": "error", "message": "ห้องนี้ถูกจองไปแล้วในช่วงเวลานี้"}
+            except: continue
 
         # 3. ตรวจสอบเงื่อนไข Mini Hall (ต้องมีชื่ออาจารย์)
         if data.room_id == "MiniHall" or "Mini Hall" in room.room_name: # อิงตาม populate_rooms.py

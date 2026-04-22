@@ -7,7 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
     <style>
         :root {
             --primary: #ff0055;
@@ -80,6 +79,7 @@
         .profile-info-section { padding: 0 50px 50px 50px; text-align: center; }
         .profile-name { font-size: 2.4em; font-weight: 900; color: #1a1a1a; margin-bottom: 8px; letter-spacing: -0.5px; }
         .profile-id { font-size: 1.2em; color: #777; margin-bottom: 40px; font-weight: 500; }
+        
         .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 25px; text-align: left; margin-bottom: 40px; }
         .info-item { background: #fdfdfd; padding: 22px 28px; border-radius: 25px; border: 1px solid rgba(0,0,0,0.04); transition: all 0.3s ease; }
         .info-item:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.06); background: white; border-color: var(--primary); }
@@ -148,7 +148,15 @@
         }
         .slot-pill:hover:not(.disabled) { border-color: var(--primary); color: var(--primary); transform: translateY(-3px) scale(1.05); }
         .slot-pill.active { background: linear-gradient(135deg, #FF1F5B, #FF5B1F); color: white; border-color: transparent; box-shadow: 0 12px 24px rgba(255, 31, 91, 0.35); }
-        .slot-pill.disabled { background: #f0f0f0; color: #bbb; border-color: #f0f0f0; cursor: not-allowed; opacity: 0.6; }
+        .slot-pill.disabled { 
+            background: #f0f0f0; 
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.03) 10px, rgba(0,0,0,0.03) 20px);
+            color: #bbb; 
+            border-color: #f0f0f0; 
+            cursor: not-allowed; 
+            opacity: 0.8;
+            pointer-events: none;
+        }
         .slot-pill input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
 
         .logout-link {
@@ -233,7 +241,7 @@
     <div id="profile-page" class="auth-container" style="display:none;">
         <div class="premium-card profile-card">
             <div class="profile-banner">
-                <a href="#" onclick="location.reload()" class="logout-link"><i class="fas fa-sign-out-alt"></i> ออกจากระบบ</a>
+                <a href="#" onclick="logout()" class="logout-link"><i class="fas fa-sign-out-alt"></i> ออกจากระบบ</a>
             </div>
             <div class="profile-avatar" id="pAvatarContainer">
                 <i class="fas fa-user-graduate" id="pAvatarIcon"></i>
@@ -268,7 +276,7 @@
 
     <div id="choice-page" class="auth-container" style="display:none; flex-direction: column; align-items: center;">
         <div style="width: 100%; max-width: 600px;">
-            <div style="margin-bottom: 30px; display: flex; justify-content: space-between;">
+            <div style="margin-bottom: 30px; display: flex; justify-content: center; gap: 20px;">
                 <button onclick="backToProfile()" class="btn-nav-back"><i class="fas fa-user-circle"></i> ข้อมูลส่วนตัว</button>
                 <button onclick="showMyBookings()" class="btn-nav-back" style="color: var(--secondary);"><i class="fas fa-list-ul"></i> การจองของฉัน</button>
             </div>
@@ -290,88 +298,36 @@
             <div class="service-grid">
                 <div class="premium-card service-card" onclick="openService('booking', 'thai')" style="border-top: 10px solid var(--accent-thai); background: #fffcf0;">
                     <div class="service-icon-wrapper" style="color: var(--accent-thai); background: #fff; overflow: hidden;"><img src="/photo/ฉิ่ง.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
-                    <h3 style="font-size: 1.8em; margin: 0 0 10px 0; font-weight: 800;">เฉพาะดนตรีไทย</h3>
+                    <h3 style="font-size: 1.8em; margin: 0 0 10px 0; font-weight: 800;">ห้องซ้อมดนตรีไทย</h3>
                     <p style="color: #666;">ห้องสำหรับซ้อมดนตรีไทยเท่านั้น</p>
                 </div>
                 <div class="premium-card service-card" onclick="openService('booking', 'inter')" style="border-top: 10px solid var(--accent-inter); background: #f0faff;">
                     <div class="service-icon-wrapper" style="color: var(--accent-inter); background: #fff;"><i class="fas fa-drum"></i></div>
-                    <h3 style="font-size: 1.8em; margin: 0 0 10px 0; font-weight: 800;">เฉพาะดนตรีสากล</h3>
+                    <h3 style="font-size: 1.8em; margin: 0 0 10px 0; font-weight: 800;">ห้องซ้อมดนตรีสากล</h3>
                     <p style="color: #666;">ห้องสำหรับซ้อมดนตรีสากลเท่านั้น</p>
                 </div>
                 <div class="premium-card service-card" onclick="openService('booking', 'both')" style="border-top: 10px solid var(--primary); background: #fff5f8;">
                     <div class="service-icon-wrapper" style="color: var(--primary); background: #fff; overflow: hidden;"><img src="/photo/กุญแจซอน.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
-                    <h3 style="font-size: 1.8em; margin: 0 0 10px 0; font-weight: 800;">ไทยและสากล</h3>
+                    <h3 style="font-size: 1.8em; margin: 0 0 10px 0; font-weight: 800;">ห้องซ้อมดนตรีไทยและสากล</h3>
                     <p style="color: #666;">ซ้อมได้ทั้งไทยและสากล หรือรวมวง</p>
                 </div>
                 <div class="premium-card service-card" onclick="openService('booking', 'restricted')" style="border-top: 10px solid #444; background: #f9f9f9;">
                     <div class="service-icon-wrapper" style="color: #444; background: #fff; overflow: hidden;"><img src="/photo/สมุด.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
-                    <h3 style="font-size: 1.8em; margin: 0 0 10px 0; font-weight: 800;">ห้องเรียน / ประชุม</h3>
+                    <h3 style="font-size: 1.8em; margin: 0 0 10px 0; font-weight: 800;">ห้องเรียน</h3>
                     <p style="color: #666;">สำหรับทำกิจกรรมกลุ่ม หรือประชุม</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 3.7 หน้า Admin Dashboard -->
-    <div id="admin-dashboard" class="auth-container" style="display:none; flex-direction: column; align-items: center; padding-top: 60px;">
-        <div style="width: 100%; max-width: 1100px;">
-            <div style="margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center;">
-                <button onclick="showChoice()" class="btn-nav-back"><i class="fas fa-arrow-left"></i> กลับหน้าหลัก</button>
-                <h2 style="margin: 0; font-weight: 800; font-size: 2em; color: #1a1a1a;">Admin <span style="color: var(--primary);">Management</span></h2>
-                <button onclick="refreshAdminDashboard()" class="btn-nav-back" style="background: var(--accent-inter); color: #004085;"><i class="fas fa-sync-alt"></i> รีเฟรช</button>
+    <div id="my-bookings-page" class="auth-container" style="display:none;">
+        <div style="width: 100%; max-width: 700px;">
+            <div style="margin-bottom: 30px; text-align: left;">
+                <button onclick="showChoice()" class="btn-nav-back"><i class="fas fa-arrow-left"></i> กลับไปหน้าบริการ</button>
             </div>
-
-            <!-- Admin Summary Bar -->
-            <div id="admin-summary-bar" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
-                <div class="premium-card" style="padding: 25px; text-align: center; border-bottom: 5px solid var(--primary);">
-                    <span class="info-label">จองวันนี้</span>
-                    <div id="adm-today-bookings" style="font-size: 2.2em; font-weight: 900; color: var(--primary);">0</div>
-                </div>
-                <div class="premium-card" style="padding: 25px; text-align: center; border-bottom: 5px solid var(--accent-inter);">
-                    <span class="info-label">นิสิตทั้งหมด</span>
-                    <div id="adm-total-users" style="font-size: 2.2em; font-weight: 900; color: var(--accent-inter);">0</div>
-                </div>
-                <div class="premium-card" style="padding: 25px; text-align: center; border-bottom: 5px solid var(--accent-thai);">
-                    <span class="info-label">ห้องที่ใช้งานได้</span>
-                    <div id="adm-total-rooms" style="font-size: 2.2em; font-weight: 900; color: var(--accent-thai);">0</div>
-                </div>
-            </div>
-
-            <div class="premium-card" style="padding: 0; overflow: hidden; background: white;">
-                <div style="padding: 25px 40px; background: #fafafa; border-bottom: 2px solid #eee; display: flex; justify-content: space-between; font-weight: 800; color: #bbb; font-size: 0.8em; text-transform: uppercase; letter-spacing: 1px;">
-                    <div style="flex: 2;">นิสิต / ห้อง</div>
-                    <div style="flex: 1;">เวลาที่จอง</div>
-                    <div style="flex: 1; text-align: right;">จัดการ</div>
-                </div>
-                <div id="admin-bookings-list" style="max-height: 600px; overflow-y: auto;"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 6. Modal: Digital Student ID -->
-    <div id="id-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; backdrop-filter:blur(10px); justify-content:center; align-items:center;">
-        <div class="premium-card" style="max-width: 380px; padding: 0; background: white; border-radius: 40px; overflow: visible; position: relative;">
-            <button onclick="closeIdModal()" style="position:absolute; top:-15px; right:-15px; width:45px; height:45px; background:white; border-radius:23px; border:none; box-shadow:0 10px 20px rgba(0,0,0,0.1); cursor:pointer; font-size:1.2em; color:var(--primary);"><i class="fas fa-times"></i></button>
-            
-            <div style="background: linear-gradient(135deg, var(--primary), var(--secondary)); height: 160px; padding: 40px 30px; text-align: center; color: white; border-radius: 40px 40px 0 0;">
-                <div style="font-weight: 800; font-size: 1.1em; letter-spacing: 1px; text-transform: uppercase;">Music Student ID</div>
-                <div style="font-size: 0.75em; opacity: 0.9;">Faculty of Education, CU</div>
-            </div>
-            
-            <div style="text-align: center; padding: 0 40px 45px 40px;">
-                <div style="width: 150px; height: 150px; border-radius: 75px; border: 6px solid white; margin: -75px auto 20px auto; overflow: hidden; box-shadow: 0 15px 30px rgba(0,0,0,0.1);">
-                    <img id="id-photo" src="" style="width: 100%; height: 100%; object-fit: cover;">
-                </div>
-                
-                <h3 id="id-name" style="margin: 0; font-size: 1.6em; font-weight: 800; color: #1a1a1a;">Name</h3>
-                <div id="id-sid" style="color: var(--primary); font-weight: 700; font-size: 1.1em; margin-bottom: 20px;">6600000027</div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; background: #f9f9f9; padding: 20px; border-radius: 20px; border: 1px solid #eee;">
-                    <div><span style="display:block; font-size:0.65em; font-weight:800; color:#bbb; text-transform:uppercase;">Major</span><span id="id-major" style="font-weight:700; color:#333; font-size:0.9em;">Music</span></div>
-                    <div><span style="display:block; font-size:0.65em; font-weight:800; color:#bbb; text-transform:uppercase;">Year</span><span id="id-year" style="font-weight:700; color:#333; font-size:0.9em;">Year 4</span></div>
-                </div>
-                
-                <div id="id-qr-canvas" style="margin-top: 25px; display: flex; justify-content: center; background:white; padding:10px; border-radius:15px; border:1px solid #eee; width: fit-content; margin-left: auto; margin-right: auto;"></div>
+            <div class="premium-card" style="padding: 40px;">
+                <h2 style="margin-top: 0;"><i class="fas fa-calendar-check" style="color: var(--primary);"></i> การจองของฉัน</h2>
+                <div id="my-bookings-list" style="margin-top: 20px;"></div>
             </div>
         </div>
     </div>
@@ -457,19 +413,9 @@
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             if(!email || !password) return Swal.fire('เตือน', 'กรุณากรอกข้อมูลให้ครบ', 'warning');
-            
-            Swal.fire({
-                title: 'กำลังตรวจสอบข้อมูล...',
-                allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading(); }
-            });
-
+            Swal.fire({ title: 'กำลังตรวจสอบข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
             try {
-                const res = await fetch('/login', { 
-                    method: 'POST', 
-                    headers: {'Content-Type': 'application/json'}, 
-                    body: JSON.stringify({email, password}) 
-                });
+                const res = await fetch('/login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email, password}) });
                 const result = await res.json();
                 if(result.status === 'success') {
                     user = result;
@@ -480,7 +426,6 @@
                     document.getElementById('pMajor').innerText = user.major;
                     document.getElementById('pEmail').innerText = user.email;
                     document.getElementById('pPhoneInput').value = user.phone || '';
-                    
                     if (user.profile_pic) {
                         document.getElementById('pAvatarIcon').style.display = 'none';
                         document.getElementById('pAvatarImg').src = user.profile_pic;
@@ -490,29 +435,22 @@
                         document.getElementById('pAvatarImg').src = user.student_card;
                         document.getElementById('pAvatarImg').style.display = 'block';
                     }
-
                     if (user.student_card) {
                         document.getElementById('pStudentCardImg').src = user.student_card;
                         document.getElementById('pStudentCardPreview').style.display = 'block';
                     }
-
-                    // Show Admin button if authorized
-                    if (user.email.includes("admin") || user.email.includes("staff")) {
-                        document.getElementById('admin-btn').style.display = 'inline-flex';
-                    }
-
                     document.getElementById('auth-page').style.display = 'none';
-                    if (user.phone && typeof user.phone === 'string' && user.phone.trim() !== "") {
-                        document.getElementById('choice-page').style.display = 'flex';
-                    } else {
-                        document.getElementById('profile-page').style.display = 'flex';
-                    }
+                    if (user.phone && typeof user.phone === 'string' && user.phone.trim() !== "") document.getElementById('choice-page').style.display = 'flex';
+                    else document.getElementById('profile-page').style.display = 'flex';
                     Swal.close();
                 } else { Swal.fire('ผิดพลาด', result.message, 'error'); }
-            } catch (err) {
-                console.error(err);
-                Swal.fire('ผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
-            }
+            } catch (err) { Swal.fire('ผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error'); }
+        }
+
+        function logout() {
+            Swal.fire({ title: 'ยืนยันออกจากระบบ?', icon: 'question', showCancelButton: true, confirmButtonText: 'ออก', cancelButtonText: 'ยกเลิก' }).then((result) => {
+                if (result.isConfirmed) { user = null; location.reload(); }
+            });
         }
 
         async function processRegister() {
@@ -550,76 +488,6 @@
             } else { Swal.fire('ผิดพลาด', result.message, 'error'); }
         }
 
-        function openAdminDashboard() {
-            document.getElementById('choice-page').style.display = 'none';
-            document.getElementById('admin-dashboard').style.display = 'flex';
-            refreshAdminDashboard();
-        }
-
-        async function refreshAdminDashboard() {
-            refreshAdminBookings();
-            try {
-                const res = await fetch('/admin/summary');
-                const data = await res.json();
-                document.getElementById('adm-today-bookings').innerText = data.today_bookings;
-                document.getElementById('adm-total-users').innerText = data.total_users;
-                document.getElementById('adm-total-rooms').innerText = data.total_rooms;
-            } catch (err) { console.error(err); }
-        }
-
-        async function refreshAdminBookings() {
-            const list = document.getElementById('admin-bookings-list');
-            list.innerHTML = '<div style="text-align:center; padding:50px; color:#bbb;"><i class="fas fa-circle-notch fa-spin fa-2x"></i></div>';
-            try {
-                const res = await fetch('/admin/all_bookings');
-                const bookings = await res.json();
-                list.innerHTML = '';
-                if (bookings.length === 0) { list.innerHTML = '<div style="text-align:center; padding:50px;">No bookings found.</div>'; return; }
-                bookings.forEach(b => {
-                    const row = document.createElement('div');
-                    row.style = 'padding: 20px 40px; border-bottom: 1px solid #f2f2f2; display: flex; justify-content: space-between; align-items: center; transition: 0.3s;';
-                    row.innerHTML = `
-                        <div style="flex: 2; text-align: left;">
-                            <div style="font-weight: 800; color:#1a1a1a;">${b.student_name} <span style="font-weight:400; color:#bbb; margin-left:10px;">ID: ${b.student_id}</span></div>
-                            <div style="font-weight: 700; color: var(--primary); font-size: 0.9em; margin-top: 4px;">Room ${b.room_name}</div>
-                        </div>
-                        <div style="flex: 1; text-align: left;">
-                            <div style="font-weight: 800; color:#444;">${b.date}</div>
-                            <div style="font-weight: 600; color: #999; font-size: 0.9em;">${b.start} - ${b.end}</div>
-                        </div>
-                        <div style="flex: 1; text-align: right;">
-                            <button onclick="adminCancel(${b.booking_id})" style="background: white; color: #ff4d4d; border: 1px solid #ff4d4d; padding: 8px 15px; border-radius: 50px; font-weight: 800; cursor: pointer; font-size: 0.8em;">VOID</button>
-                        </div>
-                    `;
-                    list.appendChild(row);
-                });
-            } catch (err) { console.error(err); }
-        }
-
-        async function adminCancel(id) {
-            const res = await Swal.fire({ title: 'Void Booking?', text: "This will immediately cancel this session.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ff4d4d', confirmButtonText: 'Yes, Void' });
-            if (res.isConfirmed) {
-                const r = await fetch('/admin/cancel_booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ booking_id: id }) });
-                const d = await r.json();
-                Swal.fire(d.status === 'success' ? 'Voided' : 'Error', d.message, d.status);
-                refreshAdminBookings();
-            }
-        }
-
-        function showDigitalId() {
-            document.getElementById('id-name').innerText = user.name;
-            document.getElementById('id-sid').innerText = user.student_id;
-            document.getElementById('id-major').innerText = user.major;
-            document.getElementById('id-year').innerText = user.year;
-            document.getElementById('id-photo').src = user.profile_pic || user.student_card;
-            document.getElementById('id-modal').style.display = 'flex';
-            const idQrContainer = document.getElementById('id-qr-canvas');
-            idQrContainer.innerHTML = '';
-            new QRCode(idQrContainer, { text: JSON.stringify({type: 'ID_VERIFY', id: user.student_id, name: user.name}), width: 100, height: 100, colorDark : "#1a1a1a", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.M });
-        }
-
-        function closeIdModal() { document.getElementById('id-modal').style.display = 'none'; }
-
         function showChoice() {
             document.getElementById('choice-page').style.display = 'flex';
             document.getElementById('category-page').style.display = 'none';
@@ -647,22 +515,22 @@
                 const search = document.getElementById('searchRoomName').value;
                 const startH = document.getElementById('filterStart').value;
                 const endH = document.getElementById('filterEnd').value;
-
+                
                 const res = await fetch(`/rooms?category=${currentCategory}`);
                 const rooms = await res.json();
                 const avRes = await fetch(`/batch_availability?category=${currentCategory}&date=${date}&start=${startH}&end=${endH}`);
                 const allAvail = await avRes.json();
-
                 container.innerHTML = '';
                 rooms.filter(r => r.room_name.toLowerCase().includes(search.toLowerCase())).forEach(r => {
-                    const av = allAvail[r.room_id]?.slots || [];
+                    const avData = allAvail[r.room_id] || { slots: [] };
+                    const av = avData.slots;
                     const card = document.createElement('div');
                     card.className = 'premium-card room-card';
                     let slotsHtml = av.map(slot => {
                         const isDisabled = slot.status !== 'ว่าง';
                         const displayStatus = slot.status.startsWith("ติดเรียน") ? "ติดเรียน" : (slot.status.startsWith("จองแล้ว") ? "จองแล้ว" : "");
                         const statusText = displayStatus ? `<span style="font-size:0.7em; display:block;">(${displayStatus})</span>` : '';
-                        return `<label class="slot-pill ${isDisabled ? 'disabled' : ''}" title="${slot.status}"><input type="checkbox" name="slot_${r.room_id}" value="${slot.time.split(':')[0]}" ${isDisabled ? 'disabled' : ''} onchange="this.parentElement.classList.toggle('active', this.checked)">${slot.time}${statusText}</label>`;
+                        return `<label class="slot-pill ${isDisabled ? 'disabled' : ''}" title="${slot.status}"><input type="checkbox" name="slot_${r.room_id}" value="${slot.time.split(':')[0]}" ${isDisabled ? 'disabled' : ''} onchange="this.parentElement.classList.toggle('active', this.checked);">${slot.time}${statusText}</label>`;
                     }).join('');
                     card.innerHTML = `
                         <div class="room-image-placeholder">
@@ -685,24 +553,29 @@
         function getCategoryLabel(cat) { const labels = { 'thai': 'Thai music', 'inter': 'International music', 'both': 'Thai & Inter', 'restricted': 'Classroom' }; return labels[cat] || cat; }
 
         async function showMyBookings() {
+            if (!user || !user.student_id) return;
             document.getElementById('choice-page').style.display = 'none';
             document.getElementById('my-bookings-page').style.display = 'flex';
-            const res = await fetch(`/my_bookings?student_id=${user.student_id}`);
-            const bookings = await res.json();
             const container = document.getElementById('my-bookings-list');
-            container.innerHTML = bookings.length === 0 ? '<p style="text-align:center; color:#888;">ไม่มีรายการจอง</p>' : '';
-            bookings.forEach(b => {
-                const item = document.createElement('div');
-                item.style = 'background:white; padding:20px; border-radius:20px; margin-bottom:15px; border:1px solid #eee; display:flex; justify-content:space-between; align-items:center;';
-                item.innerHTML = `
-                    <div style="text-align:left;">
-                        <h4 style="margin:0; font-size:1.2em;">${b.room_name}</h4>
-                        <div style="color:#777; font-size:0.9em; margin-top:5px;"><i class="far fa-calendar-alt"></i> ${b.date} | <i class="far fa-clock"></i> ${b.start} - ${b.end}</div>
-                    </div>
-                    <button onclick="cancelBooking(${b.booking_id})" style="background:#fff0f0; color:#ff4d4d; border:none; padding:10px 20px; border-radius:15px; font-weight:800; cursor:pointer;">ยกเลิก</button>
-                `;
-                container.appendChild(item);
-            });
+            container.innerHTML = '<div style="text-align:center; padding:30px; color:#bbb;"><i class="fas fa-circle-notch fa-spin fa-2x"></i> กำลังโหลด...</div>';
+            try {
+                const res = await fetch(`/my_bookings?student_id=${encodeURIComponent(user.student_id.trim())}`);
+                const bookings = await res.json();
+                container.innerHTML = bookings.length === 0 ? '<p style="text-align:center; color:#888; padding:30px;">ไม่มีรายการจอง</p>' : '';
+                bookings.forEach(b => {
+                    const item = document.createElement('div');
+                    item.style = 'background:white; padding:20px; border-radius:20px; margin-bottom:15px; border:1px solid #eee; display:flex; justify-content:space-between; align-items:center;';
+                    item.innerHTML = `
+                        <div style="text-align:left;">
+                            <h4 style="margin:0; font-size:1.2em; color:var(--primary);">${b.room_name}</h4>
+                            <div style="color:#333; font-weight:600; font-size:0.95em; margin-top:3px;"><i class="far fa-calendar-alt"></i> ${b.date} | ${b.start} - ${b.end}</div>
+                            <div style="color:#888; font-size:0.85em; margin-top:5px;"><strong>จุดประสงค์:</strong> ${b.purpose || '-'}</div>
+                        </div>
+                        <button onclick="cancelBooking(${b.booking_id})" style="background:#fff0f0; color:#ff4d4d; border:none; padding:10px 20px; border-radius:15px; font-weight:800; cursor:pointer;">ยกเลิก</button>
+                    `;
+                    container.appendChild(item);
+                });
+            } catch (err) { container.innerHTML = '<p style="text-align:center; color:red; padding:30px;">เกิดข้อผิดพลาด</p>'; }
         }
 
         async function cancelBooking(id) {
@@ -718,7 +591,7 @@
         async function book(rid) {
             const selected = document.querySelectorAll(`input[name="slot_${rid}"]:checked`);
             if(selected.length === 0) return Swal.fire('เตือน', 'กรุณาเลือกเวลา', 'info');
-            const { value: purpose } = await Swal.fire({ title: 'จุดประสงค์', input: 'text', showCancelButton: true });
+            const { value: purpose } = await Swal.fire({ title: 'จุดประสงค์การใช้งาน', input: 'text', showCancelButton: true });
             if (!purpose) return;
             let teacherName = "";
             if (rid === "MiniHall") {
@@ -727,11 +600,20 @@
             }
             const date = document.getElementById('bookDate').value;
             const slots = Array.from(selected).map(p => p.value).sort();
+            Swal.fire({ title: 'กำลังดำเนินการจอง...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            let successCount = 0; let lastError = "";
             for (let s of slots) {
-                await fetch('/book', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ student_id: user.student_id, room_id: rid, date: date, start: s, end: (parseInt(s)+1).toString().padStart(2,'0')+':00', band: 'ทั่วไป', purpose: purpose, teacher_name: teacherName }) });
+                try {
+                    const res = await fetch('/book', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ student_id: user.student_id, room_id: rid, date: date, start: s.padStart(2,'0')+':00', end: (parseInt(s)+1).toString().padStart(2,'0')+':00', band: 'ทั่วไป', purpose: purpose, teacher_name: teacherName }) });
+                    const result = await res.json();
+                    if (result.status === 'success') successCount++;
+                    else { lastError = result.message; break; }
+                } catch (err) { lastError = "ล้มเหลว"; break; }
             }
-            Swal.fire('สำเร็จ', 'จองห้องเรียบร้อย', 'success');
-            loadRooms();
+            if (successCount === slots.length) {
+                Swal.fire('สำเร็จ', `จองห้องเรียบร้อย ${successCount} ช่วงเวลา`, 'success');
+                loadRooms();
+            } else { Swal.fire('จองไม่สำเร็จ', lastError, 'error'); loadRooms(); }
         }
 
         flatpickr("#bookDate", { defaultDate: "today", onChange: loadRooms, disableMobile: "true" });

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>จองห้อง - SpaceMusededu47</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div id="booking-app" style="max-width:1100px; margin:0 auto; padding:40px 20px 100px 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px;">
+            <button onclick="window.location.href='/login/service/category'" class="btn-nav-back"><i class="fas fa-arrow-left"></i> ย้อนกลับ</button>
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 15px;">
+                <div class="quota-info">โควตาคงเหลือ: <span id="quota-display">3</span> ชม.</div>
+                <button onclick="window.location.href='/login/my_bookings'" class="btn-nav-back" style="color: var(--secondary); padding: 10px 20px; font-size: 0.95em;"><i class="fas fa-list-ul"></i> การจองของฉัน</button>
+            </div>
+        </div>
+
+        <h2 id="booking-title" style="margin-bottom: 30px; color: white; text-shadow: 0 5px 15px rgba(0,0,0,0.1);">จองห้องซ้อม</h2>
+
+        <div class="filter-container">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <div>
+                    <label class="filter-label">ค้นหาห้อง</label>
+                    <div class="filter-input-group"><i class="fas fa-search"></i><input type="text" id="searchRoomName" class="filter-control" placeholder="ระบุชื่อห้อง..." oninput="loadRooms()"></div>
+                </div>
+                <div>
+                    <label class="filter-label">วันที่จอง</label>
+                    <div class="filter-input-group"><i class="fas fa-calendar-day"></i><input type="text" id="bookDate" class="filter-control" placeholder="เลือกวันที่"></div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label class="filter-label">เริ่ม</label>
+                        <select id="filterStart" class="filter-control" style="padding-left: 15px;" onchange="loadRooms()">
+                            <option value="07">07:00</option><option value="08">08:00</option><option value="09">09:00</option><option value="10">10:00</option>
+                            <option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option>
+                            <option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option>
+                            <option value="19">19:00</option><option value="20">20:00</option><option value="21">21:00</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label class="filter-label">ถึง</label>
+                        <select id="filterEnd" class="filter-control" style="padding-left: 15px;" onchange="loadRooms()">
+                            <option value="08">08:00</option><option value="09">09:00</option><option value="10">10:00</option><option value="11">11:00</option>
+                            <option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option>
+                            <option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option>
+                            <option value="20">20:00</option><option value="21">21:00</option><option value="22" selected>22:00</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="rooms-list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:25px;"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        let user = JSON.parse(localStorage.getItem('user')) || null;
+        let currentCategory = localStorage.getItem('currentCategory') || '';
+
+        window.onload = () => {
+            if (!user) { window.location.href = '/login'; return; }
+            if (!currentCategory) { window.location.href = '/service/category'; return; }
+            
+            const titleMap = { 'thai': 'ห้องซ้อมดนตรีไทย', 'inter': 'ห้องซ้อมดนตรีสากล', 'both': 'ห้องซ้อมดนตรีไทยและสากล', 'restricted': 'ห้องเรียน' };
+            document.getElementById('booking-title').innerText = 'จอง' + (titleMap[currentCategory] || 'ห้องซ้อม');
+            
+            flatpickr("#bookDate", { defaultDate: "today", onChange: loadRooms, disableMobile: "true" });
+            loadRooms();
+        };
+
+        async function loadRooms() {
+            const container = document.getElementById('rooms-list');
+            container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:50px; color:white;"><i class="fas fa-circle-notch fa-spin fa-3x"></i></div>';
+            try {
+                const date = document.getElementById('bookDate').value;
+                const search = document.getElementById('searchRoomName').value;
+                const startH = document.getElementById('filterStart').value;
+                const endH = document.getElementById('filterEnd').value;
+                
+                // คำนวณโควตาคงเหลือของวันที่เลือก
+                try {
+                    const myBookingsRes = await fetch(`/my_bookings_api?student_id=${encodeURIComponent(user.student_id.trim())}`);
+                    const myBookings = await myBookingsRes.json();
+                    let bookedHours = 0;
+                    myBookings.forEach(b => {
+                        if (b.date === date) {
+                            const sh = parseInt(b.start.split(':')[0]);
+                            const eh = parseInt(b.end.split(':')[0]);
+                            bookedHours += (eh - sh);
+                        }
+                    });
+                    document.getElementById('quota-display').innerText = Math.max(0, 3 - bookedHours);
+                } catch(e) { console.error("Error fetching quota:", e); }
+
+                const res = await fetch(`/rooms?category=${currentCategory}`);
+                const rooms = await res.json();
+                const avRes = await fetch(`/batch_availability?category=${currentCategory}&date=${date}&start=${startH}&end=${endH}`);
+                const allAvail = await avRes.json();
+                container.innerHTML = '';
+                rooms.filter(r => r.room_name.toLowerCase().includes(search.toLowerCase())).forEach(r => {
+                    const avData = allAvail[r.room_id] || { slots: [] };
+                    const av = avData.slots;
+                    const card = document.createElement('div');
+                    card.className = 'premium-card room-card';
+                    let slotsHtml = av.map(slot => {
+                        const isDisabled = slot.status !== 'ว่าง';
+                        const displayStatus = slot.status.startsWith("คาบเรียน") ? "คาบเรียน" : (slot.status.startsWith("จองแล้ว") ? "จองแล้ว" : (slot.status === "เลยเวลาจองแล้ว" ? "เลยเวลา" : ""));
+                        const statusText = displayStatus ? `<span style="font-size:0.7em; display:block;">(${displayStatus})</span>` : '';
+                        return `<label class="slot-pill ${isDisabled ? 'disabled' : ''}" title="${slot.status}"><input type="checkbox" name="slot_${r.room_id}" value="${slot.time.split(':')[0]}" ${isDisabled ? 'disabled' : ''} onchange="this.parentElement.classList.toggle('active', this.checked);">${slot.time}${statusText}</label>`;
+                    }).join('');
+                    card.innerHTML = `
+                        <div class="room-image-placeholder">
+                            ${r.image_url ? `<img src="${r.image_url}" style="width:100%; height:100%; object-fit:cover;">` : `<div style="font-size:5em; color:#ddd;"><i class="fas fa-door-open"></i></div>`}
+                            <div class="room-category-badge" style="background:${getCategoryColor(r.category)}">${getCategoryLabel(r.category)}</div>
+                        </div>
+                        <div style="padding:25px; text-align:left;">
+                            <div style="color:var(--primary); font-weight:800; font-size:0.9em; margin-bottom:5px;">Room ${r.room_id}</div>
+                            <h3 style="margin:0; font-size:1.4em;">${r.room_name}</h3>
+                        </div>
+                        <div class="slots-grid">${slotsHtml}</div>
+                        <div style="padding:0 25px 25px 25px;"><button onclick="book('${r.room_id}')" class="auth-btn" style="padding:15px; font-size:1em;">ยืนยันจอง</button></div>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        function getCategoryColor(cat) { return cat === 'thai' ? 'var(--accent-thai)' : (cat === 'inter' ? 'var(--accent-inter)' : 'var(--primary)'); }
+        function getCategoryLabel(cat) { const labels = { 'thai': 'ดนตรีไทย', 'inter': 'ดนตรีสากล', 'both': 'ไทย & สากล', 'restricted': 'ห้องเรียน' }; return labels[cat] || cat; }
+
+        async function book(rid) {
+            const selected = document.querySelectorAll(`input[name="slot_${rid}"]:checked`);
+            if(selected.length === 0) return Swal.fire('เตือน', 'กรุณาเลือกเวลา', 'info');
+            const { value: purpose } = await Swal.fire({ title: 'จุดประสงค์การใช้งาน', input: 'text', showCancelButton: true });
+            if (!purpose) return;
+            let teacherName = "";
+            if (rid === "MiniHall") {
+                const { value: tName } = await Swal.fire({ title: 'อาจารย์ผู้รับผิดชอบ', input: 'text', showCancelButton: true });
+                if (!tName) return; teacherName = tName;
+            }
+            const date = document.getElementById('bookDate').value;
+            const slots = Array.from(selected).map(p => p.value).sort();
+            Swal.fire({ title: 'กำลังดำเนินการจอง...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            let successCount = 0; let lastError = "";
+            for (let s of slots) {
+                try {
+                    const res = await fetch('/book', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ student_id: user.student_id, room_id: rid, date: date, start: s.padStart(2,'0')+':00', end: (parseInt(s)+1).toString().padStart(2,'0')+':00', band: 'ทั่วไป', purpose: purpose, teacher_name: teacherName }) });
+                    const result = await res.json();
+                    if (result.status === 'success') successCount++;
+                    else { lastError = result.message; break; }
+                } catch (err) { lastError = "ล้มเหลว"; break; }
+            }
+            if (successCount === slots.length) {
+                Swal.fire('สำเร็จ', `จองห้องเรียบร้อย ${successCount} ช่วงเวลา`, 'success');
+                loadRooms();
+            } else { Swal.fire('จองไม่สำเร็จ', lastError, 'error'); loadRooms(); }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>ข้อมูลส่วนตัว - SpaceMusededu47</title>
+    <meta name="description" content="ระบบจองห้องซ้อมดนตรีและดนตรีสากล สำหรับนิสิต คณะครุศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div id="profile-page" class="auth-container">
+        <div class="premium-card profile-card">
+            <div class="profile-banner">
+                <a href="#" onclick="logout()" class="logout-link"><i class="fas fa-sign-out-alt"></i> ออกจากระบบ</a>
+            </div>
+            <div class="profile-avatar" id="pAvatarContainer" onclick="document.getElementById('profilePicInput').click()" title="เปลี่ยนรูปโปรไฟล์">
+                <i class="fas fa-user-graduate" id="pAvatarIcon"></i>
+                <img id="pAvatarImg" style="display:none; width:100%; height:100%; border-radius:50px; object-fit:cover;">
+                <div class="edit-overlay"><i class="fas fa-camera"></i></div>
+            </div>
+            <input type="file" id="profilePicInput" style="display:none;" accept="image/*" onchange="uploadProfilePic(this)">
+            <div class="profile-info-section">
+                <div class="profile-name" id="pName"></div>
+                <div class="profile-id" id="pStudentIdDisplay"></div>
+                
+                <div class="info-grid">
+                    <div class="info-item"><span class="info-label">ชั้นปี</span><div class="info-value" id="pYear"></div></div>
+                    <div class="info-item"><span class="info-label">คณะ</span><div class="info-value" id="pFaculty"></div></div>
+                    <div class="info-item" style="grid-column: span 2;"><span class="info-label">สาขาวิชา</span><div class="info-value" id="pMajor"></div></div>
+                    <div class="info-item" style="grid-column: span 2;"><span class="info-label">อีเมล</span><div class="info-value" id="pEmail"></div></div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 30px;">
+                    <label class="form-label" style="text-align: center;">เบอร์โทรศัพท์ติดต่อ</label>
+                    <input type="text" id="pPhoneInput" class="input-field" style="text-align: center;" placeholder="08xxxxxxxx">
+                </div>
+
+                <button onclick="saveProfile()" class="auth-btn">ยืนยันข้อมูลและไปต่อ <i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        let user = JSON.parse(localStorage.getItem('user')) || null;
+        window.onload = () => {
+            if (!user) {
+                window.location.href = '/login';
+                return;
+            }
+            populateUserData();
+        };
+
+        function populateUserData() {
+            document.getElementById('pName').innerText = user.name;
+            document.getElementById('pStudentIdDisplay').innerText = `ID: ${user.student_id}`;
+            document.getElementById('pYear').innerText = user.year;
+            document.getElementById('pFaculty').innerText = user.faculty;
+            document.getElementById('pMajor').innerText = user.major;
+            document.getElementById('pEmail').innerText = user.email;
+            document.getElementById('pPhoneInput').value = user.phone || '';
+            if (user.profile_pic) {
+                document.getElementById('pAvatarIcon').style.display = 'none';
+                document.getElementById('pAvatarImg').src = user.profile_pic;
+                document.getElementById('pAvatarImg').style.display = 'block';
+            } else if (user.student_card) {
+                document.getElementById('pAvatarIcon').style.display = 'none';
+                document.getElementById('pAvatarImg').src = user.student_card;
+                document.getElementById('pAvatarImg').style.display = 'block';
+            }
+        }
+
+        async function uploadProfilePic(input) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('student_id', user.student_id);
+            formData.append('file', file);
+            
+            Swal.fire({ title: 'กำลังอัปโหลด...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            try {
+                const res = await fetch('/upload_profile_pic', { method: 'POST', body: formData });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    user.profile_pic = result.profile_pic;
+                    localStorage.setItem('user', JSON.stringify(user));
+                    document.getElementById('pAvatarIcon').style.display = 'none';
+                    document.getElementById('pAvatarImg').src = user.profile_pic;
+                    document.getElementById('pAvatarImg').style.display = 'block';
+                    Swal.fire('สำเร็จ', 'อัปโหลดรูปโปรไฟล์เรียบร้อย', 'success');
+                } else {
+                    Swal.fire('ผิดพลาด', result.message || 'ไม่สามารถอัปโหลดได้', 'error');
+                }
+            } catch (err) {
+                Swal.fire('ผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+            }
+            input.value = ''; // Reset input
+        }
+
+        async function saveProfile() {
+            const phone = document.getElementById('pPhoneInput').value;
+            if (!phone) return Swal.fire('เตือน', 'กรุณาระบุเบอร์โทรศัพท์', 'warning');
+            Swal.showLoading();
+            const res = await fetch('/update_phone', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: user.student_id, phone: phone }) });
+            const result = await res.json();
+            if (result.status === 'success') {
+                user.phone = phone;
+                localStorage.setItem('user', JSON.stringify(user));
+                Swal.close();
+                window.location.href = '/login/service';
+            } else { Swal.fire('ผิดพลาด', result.message, 'error'); }
+        }
+
+        function logout() {
+            Swal.fire({ title: 'ยืนยันออกจากระบบ?', icon: 'question', showCancelButton: true, confirmButtonText: 'ออก', cancelButtonText: 'ยกเลิก' }).then((result) => {
+                if (result.isConfirmed) { 
+                    user = null; 
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('currentCategory');
+                    window.location.href = '/login';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>หมวดหมู่ห้อง - SpaceMusededu47</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div id="category-page" class="auth-container">
+        <div style="width: 100%; max-width: 900px;">
+            <div style="margin-bottom: 40px; text-align: left;">
+                <button onclick="window.location.href='/login/service'" class="btn-nav-back"><i class="fas fa-arrow-left"></i> กลับไปหน้าบริการ</button>
+            </div>
+            <div class="service-grid">
+                <div class="premium-card service-card" onclick="openService('thai')" style="border-top: 10px solid var(--accent-thai); background: #fffcf0;">
+                    <div class="service-icon-wrapper" style="color: var(--accent-thai); background: #fff; overflow: hidden;"><img src="/photo/ฉิ่ง.jpg" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'"></div>
+                    <h3 style="font-size: 1.8em; margin: 0 0 10px 0; font-weight: 800;">ห้องซ้อมดนตรีไทย</h3>
+                    <p style="color: #666;">ห้องสำหรับซ้อมดนตรีเท่านั้น</p>
+                </div>
+                <div class="premium-card service-card" onclick="openService('inter')" style="border-top: 10px solid var(--accent-inter); background: #f0faff;">
+                    <div class="service-icon-wrapper" style="color: var(--accent-inter); background: #fff; overflow: hidden;"><img src="/photo/กลอง.png" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'"></div>
+                    <h3 style="font-size: 1.8em; margin: 0 0 10px 0; font-weight: 800;">ห้องซ้อมดนตรีสากล</h3>
+                    <p style="color: #666;">ห้องสำหรับซ้อมดนตรีเท่านั้น</p>
+                </div>
+                <div class="premium-card service-card" onclick="openService('both')" style="border-top: 10px solid var(--primary); background: #fff5f8;">
+                    <div class="service-icon-wrapper" style="color: var(--primary); background: #fff; overflow: hidden;"><img src="/photo/กุญแจซอน.jpg" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'"></div>
+                    <h3 style="font-size: 1.8em; margin: 0 0 10px 0; font-weight: 800;">ห้องซ้อมดนตรีไทยและสากล</h3>
+                    <p style="color: #666;">ห้องสำหรับซ้อมหรือรวมวง</p>
+                </div>
+                <div class="premium-card service-card" onclick="openService('restricted')" style="border-top: 10px solid #444; background: #f9f9f9;">
+                    <div class="service-icon-wrapper" style="color: #444; background: #fff; overflow: hidden;"><img src="/photo/สมุด.jpg" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'"></div>
+                    <h3 style="font-size: 1.8em; margin: 0 0 10px 0; font-weight: 800;">ห้องเรียน</h3>
+                    <p style="color: #666;">ห้องสำหรับทำกิจกรรมกลุ่ม หรือประชุม</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let user = JSON.parse(localStorage.getItem('user')) || null;
+        window.onload = () => {
+            if (!user) window.location.href = '/login';
+        };
+
+        function openService(category) {
+            localStorage.setItem('currentCategory', category);
+            window.location.href = '/login/service/category/booking';
+        }
+    </script>
+</body>
+</html>

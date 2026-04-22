@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>เข้าสู่ระบบ - SpaceMusededu47</title>
+    <meta name="description" content="ระบบจองห้องซ้อมดนตรีและดนตรีสากล สำหรับนิสิต คณะครุศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div id="auth-page" class="auth-container">
+        <div id="login-card" class="premium-card auth-card">
+            <div class="auth-banner"><i class="fas fa-music"></i></div>
+            <div class="auth-content">
+                <h2 style="margin: 0 0 30px 0; font-weight: 700; color: #1a1a1a;">SpaceMusededu47</h2>
+                <div class="form-group">
+                    <label class="form-label">อีเมลมหาวิทยาลัย</label>
+                    <input type="email" id="loginEmail" class="input-field" placeholder="@student.chula.ac.th">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">รหัสผ่าน</label>
+                    <div style="position: relative;">
+                        <input type="password" id="loginPassword" class="input-field" style="padding-right: 50px;" placeholder="••••••••">
+                        <i class="fas fa-eye" id="toggleLoginPass" style="position: absolute; right: 18px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #aaa;" onclick="togglePassword('loginPassword', 'toggleLoginPass')"></i>
+                    </div>
+                </div>
+                <button onclick="processLogin()" class="auth-btn">เข้าสู่ระบบ</button>
+                <p style="margin-top:25px; color: #777;">ยังไม่มีบัญชี? <a href="/register" style="color: var(--primary); font-weight: 600; text-decoration: none;">สมัครสมาชิก</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        let user = JSON.parse(localStorage.getItem('user')) || null;
+        window.onload = () => {
+            // No auto-redirect so user can login as another account if they want
+        };
+
+        function togglePassword(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') { input.type = 'text'; icon.classList.replace('fa-eye', 'fa-eye-slash'); } 
+            else { input.type = 'password'; icon.classList.replace('fa-eye-slash', 'fa-eye'); }
+        }
+
+        async function processLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            if(!email || !password) return Swal.fire('เตือน', 'กรุณากรอกข้อมูลให้ครบ', 'warning');
+            Swal.fire({ title: 'กำลังตรวจสอบข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            try {
+                const res = await fetch('/api/login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email, password}) });
+                const result = await res.json();
+                if(result.status === 'success') {
+                    user = result;
+                    localStorage.setItem('user', JSON.stringify(user));
+                    Swal.close();
+                    if (user.phone && user.phone.trim() !== "") {
+                        window.location.href = '/login/service';
+                    } else {
+                        window.location.href = '/login/profile';
+                    }
+                } else { Swal.fire('ผิดพลาด', result.message, 'error'); }
+            } catch (err) { Swal.fire('ผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error'); }
+        }
+    </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Body, File, UploadFile, Form
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import or_, text
 from models import Session, Room, Booking, User, RoomSchedule
 from pydantic import BaseModel
@@ -38,16 +38,41 @@ os.makedirs("photo", exist_ok=True)
 os.makedirs("uploads/student_cards", exist_ok=True)
 os.makedirs("uploads/profiles", exist_ok=True)
 os.makedirs("templates", exist_ok=True)
+os.makedirs("static", exist_ok=True)
 
-# --- โค้ดบรรทัดเดิมของคุณ (ไม่ต้องเปลี่ยนแปลง) ---
 app.mount("/photo", StaticFiles(directory="photo"), name="photo")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
-# 1. หน้าแรก
-@app.get("/", response_class=HTMLResponse)
-def index():
-    with open("templates/index.html", encoding="utf-8") as f:
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+def get_html(filename: str):
+    with open(f"templates/{filename}", encoding="utf-8") as f:
         content = f.read()
     return HTMLResponse(content=content, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
+
+@app.get("/", response_class=HTMLResponse)
+def index():
+    return RedirectResponse(url="/login")
+
+@app.get("/login", response_class=HTMLResponse)
+def get_login(): return get_html("login.html")
+
+@app.get("/register", response_class=HTMLResponse)
+def get_register(): return get_html("register.html")
+
+@app.get("/login/profile", response_class=HTMLResponse)
+def get_profile(): return get_html("profile.html")
+
+@app.get("/login/service", response_class=HTMLResponse)
+def get_service(): return get_html("service.html")
+
+@app.get("/login/service/category", response_class=HTMLResponse)
+def get_category(): return get_html("category.html")
+
+@app.get("/login/service/category/booking", response_class=HTMLResponse)
+def get_booking(): return get_html("booking.html")
+
+@app.get("/login/my_bookings", response_class=HTMLResponse)
+def get_my_bookings_page(): return get_html("my_bookings.html")
 
 # 2. ดึงข้อมูลห้อง (กรองตามหมวดหมู่ได้)
 @app.get("/rooms")
@@ -57,9 +82,9 @@ def get_rooms(category: str = None):
         query = session.query(Room)
         if category:
             if category == 'thai':
-                query = query.filter(Room.category.in_(['thai', 'both']))
+                query = query.filter(Room.category == 'thai')
             elif category == 'inter':
-                query = query.filter(Room.category.in_(['inter', 'both']))
+                query = query.filter(Room.category == 'inter')
             elif category == 'both':
                 query = query.filter(Room.category == 'both')
             elif category == 'restricted':
@@ -70,7 +95,7 @@ def get_rooms(category: str = None):
         session.close()
 
 # 2.1 ดึงการจองของฉัน
-@app.get("/my_bookings")
+@app.get("/my_bookings_api")
 def get_my_bookings(student_id: str):
     session = Session()
     try:
@@ -178,9 +203,9 @@ def batch_availability(category: str, date: str, start: int = 7, end: int = 22):
         query = session.query(Room)
         if category:
             if category == 'thai':
-                query = query.filter(Room.category.in_(['thai', 'both']))
+                query = query.filter(Room.category == 'thai')
             elif category == 'inter':
-                query = query.filter(Room.category.in_(['inter', 'both']))
+                query = query.filter(Room.category == 'inter')
             elif category == 'both':
                 query = query.filter(Room.category == 'both')
             elif category == 'restricted':
@@ -245,13 +270,19 @@ def batch_availability(category: str, date: str, start: int = 7, end: int = 22):
 
             for slot_h in time_slots:
                 status = "ว่าง"
-                for sch in r_schedules:
-                    try:
-                        sh = int(sch.start_time.split(":")[0])
-                        eh = int(sch.end_time.split(":")[0])
-                        if sh <= slot_h < eh:
-                            status = f"ติดเรียน: {sch.subject_name}"; break
-                    except: continue
+                
+                # ตรวจสอบเวลาที่ผ่านมาแล้ว
+                if date < current_date_str or (date == current_date_str and slot_h <= current_h):
+                    status = "เลยเวลาจองแล้ว"
+                
+                if status == "ว่าง":
+                    for sch in r_schedules:
+                        try:
+                            sh = int(sch.start_time.split(":")[0])
+                            eh = int(sch.end_time.split(":")[0])
+                            if sh <= slot_h < eh:
+                                status = f"คาบเรียน: {sch.subject_name}"; break
+                        except: continue
                 if status == "ว่าง":
                     for b in r_bookings:
                         try:
@@ -392,7 +423,7 @@ def create_booking(data: BookingRequest):
         if not user or not room:
             return {"status": "error", "message": "ไม่พบข้อมูลผู้ใช้หรือห้อง"}
 
-        # 1. เช็กสิทธิ์ตามสาขา (คงเดิม)
+        # 1. เช็กสิทธิ์ตามสาขา
         user_major = user.major.strip() if user.major else ""
         is_edu = "ดนตรีศึกษา" in user_major
         is_thai = "ดนตรีไทย" in user_major
@@ -400,10 +431,10 @@ def create_booking(data: BookingRequest):
 
         if room.category == 'restricted':
             return {"status": "error", "message": "ห้องนี้ไม่เปิดให้จองออนไลน์"}
-        if room.category == 'thai' and not (is_thai or is_edu):
-            return {"status": "error", "message": "เฉพาะนิสิตสาขาดนตรีไทย/ดนตรีศึกษาเท่านั้น"}
-        if room.category == 'inter' and not (is_inter or is_edu):
-            return {"status": "error", "message": "เฉพาะนิสิตสาขาดนตรีสากล/ดนตรีศึกษาเท่านั้น"}
+        if room.category == 'thai' and not (is_thai or is_inter or is_edu):
+            return {"status": "error", "message": "เฉพาะนิสิตสาขาดนตรีไทย/ดนตรีสากล/ดนตรีศึกษาเท่านั้น"}
+        if room.category == 'inter' and not (is_thai or is_inter or is_edu):
+            return {"status": "error", "message": "เฉพาะนิสิตสาขาดนตรีไทย/ดนตรีสากล/ดนตรีศึกษาเท่านั้น"}
 
         # 2. เช็กตารางเรียน (RoomSchedule)
         # แปลงวันที่เป็นวันในสัปดาห์ (0=Monday, 6=Sunday)
@@ -487,7 +518,7 @@ def create_booking(data: BookingRequest):
         session.close()
 
 # 5. สมัครสมาชิก
-@app.post("/register")
+@app.post("/api/register")
 async def register(
     email: str = Form(...),
     password: str = Form(...),
@@ -556,7 +587,7 @@ async def register(
         session.close()
 
 # 6. ล็อกอิน
-@app.post("/login")
+@app.post("/api/login")
 def login(data: LoginRequest):
     session = Session()
     try:

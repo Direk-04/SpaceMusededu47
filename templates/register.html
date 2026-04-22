@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>สมัครสมาชิก - SpaceMusededu47</title>
+    <meta name="description" content="ระบบจองห้องซ้อมดนตรีและดนตรีสากล สำหรับนิสิต คณะครุศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div id="auth-page" class="auth-container">
+        <div id="register-card" class="premium-card auth-card">
+            <div class="auth-banner"><i class="fas fa-user-plus"></i></div>
+            <div class="auth-content">
+                <h2 style="margin: 0 0 25px 0; font-weight: 700;">สมัครสมาชิก</h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <input type="text" id="regFirstName" class="input-field" placeholder="ชื่อ">
+                    <input type="text" id="regLastName" class="input-field" placeholder="นามสกุล">
+                </div>
+                <input type="text" id="regStudentId" class="input-field" placeholder="รหัสนิสิต 10 หลัก" style="margin-bottom:15px;">
+                <select id="regYear" class="input-field" style="margin-bottom:15px;">
+                    <option value="" disabled selected>เลือกชั้นปี</option>
+                    <option value="ปี 1">ปี 1</option><option value="ปี 2">ปี 2</option><option value="ปี 3">ปี 3</option><option value="ปี 4">ปี 4</option>
+                </select>
+                <input type="email" id="regEmail" class="input-field" placeholder="อีเมล @student.chula.ac.th" style="margin-bottom:15px;">
+                <div style="position: relative; margin-bottom: 15px;">
+                    <input type="password" id="regPassword" class="input-field" style="padding-right: 50px;" placeholder="รหัสผ่าน">
+                    <i class="fas fa-eye" id="toggleRegPass" style="position: absolute; right: 18px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #aaa;" onclick="togglePassword('regPassword', 'toggleRegPass')"></i>
+                </div>
+                <input type="text" id="regFaculty" class="input-field" placeholder="คณะ" value="ครุศาสตร์" style="margin-bottom:15px;">
+                <input type="text" id="regMajor" class="input-field" placeholder="สาขาวิชา" style="margin-bottom:15px;">
+                
+                <div class="form-group">
+                    <label class="form-label">รูปนักศึกษา</label>
+                    <div class="upload-zone" onclick="document.getElementById('regStudentCard').click()">
+                        <input type="file" id="regStudentCard" style="display:none;" accept="image/*" onchange="previewImage(this, 'cardPreview')">
+                        <div id="cardPreview" class="preview-container">
+                            <i class="fas fa-user-circle"></i>
+                            <p>คลิกเพื่ออัปโหลดรูปนักศึกษา</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <button onclick="processRegister()" class="auth-btn">ยืนยันสมัครสมาชิก</button>
+                <p style="margin-top:20px;"><a href="/login" style="color: #888; text-decoration: none;"><i class="fas fa-arrow-left"></i> กลับไปหน้าล็อกอิน</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        let user = JSON.parse(localStorage.getItem('user')) || null;
+        window.onload = () => {
+            // No auto-redirect
+        };
+
+        function togglePassword(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') { input.type = 'text'; icon.classList.replace('fa-eye', 'fa-eye-slash'); } 
+            else { input.type = 'password'; icon.classList.replace('fa-eye-slash', 'fa-eye'); }
+        }
+
+        function previewImage(input, containerId) {
+            const container = document.getElementById(containerId);
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const oldImg = container.querySelector('.preview-image');
+                    if (oldImg) oldImg.remove();
+                    const img = document.createElement('img');
+                    img.src = e.target.result; img.className = 'preview-image';
+                    container.appendChild(img);
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        async function processRegister() {
+            const formData = new FormData();
+            formData.append('first_name', document.getElementById('regFirstName').value);
+            formData.append('last_name', document.getElementById('regLastName').value);
+            formData.append('student_id', document.getElementById('regStudentId').value);
+            formData.append('year', document.getElementById('regYear').value);
+            formData.append('email', document.getElementById('regEmail').value);
+            formData.append('password', document.getElementById('regPassword').value);
+            formData.append('faculty', document.getElementById('regFaculty').value);
+            formData.append('major', document.getElementById('regMajor').value);
+            formData.append('status', "นิสิต");
+            const cardFile = document.getElementById('regStudentCard').files[0];
+            if (!cardFile) return Swal.fire('เตือน', 'กรุณาอัปโหลดรูปนักศึกษา', 'warning');
+            formData.append('student_card', cardFile);
+            Swal.showLoading();
+            const res = await fetch('/api/register', { method: 'POST', body: formData });
+            const result = await res.json();
+            if (result.status === 'success') {
+                Swal.fire('สำเร็จ', result.message, result.status).then(() => {
+                    window.location.href = '/login';
+                });
+            } else {
+                Swal.fire('ผิดพลาด', result.message, result.status);
+            }
+        }
+    </script>
+</body>
+</html>

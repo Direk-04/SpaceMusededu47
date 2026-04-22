@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>บริการของเรา - SpaceMusededu47</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div id="choice-page" class="auth-container" style="flex-direction: column; align-items: center;">
+        <div style="width: 100%; max-width: 600px;">
+            <div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <button onclick="window.location.href='/login/profile'" class="btn-nav-back"><i class="fas fa-user-circle"></i> ข้อมูลส่วนตัว</button>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <button onclick="window.location.href='/login/my_bookings'" class="btn-nav-back" style="color: var(--secondary);"><i class="fas fa-list-ul"></i> การจองของฉัน</button>
+                    <button onclick="logout()" class="btn-nav-back" style="color: #ff4d4d;"><i class="fas fa-sign-out-alt"></i> ออกจากระบบ</button>
+                </div>
+            </div>
+            <div class="service-grid">
+                <div class="premium-card service-card" onclick="window.location.href='/login/service/category'" style="padding: 60px 40px; background: white;">
+                    <div class="service-icon-wrapper" style="width: 120px; height: 120px; font-size: 4em;"><i class="fas fa-calendar-check"></i></div>
+                    <h3 style="font-size: 2em; margin: 0 0 15px 0;">จองห้องซ้อมดนตรี</h3>
+                    <p style="color: #666; font-size: 1.1em;">ห้องซ้อมดนตรีไทยและสากล<br>อาคารพระมิ่งขวัญฯ ชั้น 5</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        let user = JSON.parse(localStorage.getItem('user')) || null;
+        window.onload = () => {
+            if (!user) window.location.href = '/login';
+        };
+
+        function logout() {
+            Swal.fire({ title: 'ยืนยันออกจากระบบ?', icon: 'question', showCancelButton: true, confirmButtonText: 'ออก', cancelButtonText: 'ยกเลิก' }).then((result) => {
+                if (result.isConfirmed) { 
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('currentCategory');
+                    window.location.href = '/login';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

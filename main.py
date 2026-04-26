@@ -314,7 +314,7 @@ def get_facility_status():
         current_h = now.hour
         
         # ดึงห้องทั้งหมดที่จองได้
-        all_rooms = session.query(Room).filter(Room.category != 'restricted').all()
+        all_rooms = session.query(Room).all()
         total_rooms = len(all_rooms)
         
         # ดึงการจองชั่วโมงนี้
@@ -431,8 +431,6 @@ def create_booking(data: BookingRequest):
         is_thai = "ดนตรีไทย" in user_major
         is_inter = "ดนตรีสากล" in user_major
 
-        if room.category == 'restricted':
-            return {"status": "error", "message": "ห้องนี้ไม่เปิดให้จองออนไลน์"}
         if room.category == 'thai' and not (is_thai or is_inter or is_edu):
             return {"status": "error", "message": "เฉพาะนิสิตสาขาดนตรีไทย/ดนตรีสากล/ดนตรีศึกษาเท่านั้น"}
         if room.category == 'inter' and not (is_thai or is_inter or is_edu):
@@ -661,7 +659,7 @@ def get_admin_summary():
         
         total_bookings_today = session.query(Booking).filter(Booking.booking_date == today_str).count()
         total_users = session.query(User).count()
-        total_rooms = session.query(Room).filter(Room.category != 'restricted').count()
+        total_rooms = session.query(Room).count()
         
         # ค้นหาห้องที่ถูกใช้บ่อยที่สุด
         most_popular = session.execute(text("SELECT room_id, COUNT(*) as count FROM bookings GROUP BY room_id ORDER BY count DESC LIMIT 1")).fetchone()

@@ -7,8 +7,70 @@ from pydantic import BaseModel
 import shutil
 import os
 import datetime
+import gspread
+from google.oauth2.service_account import Credentials
 
 BANGKOK_TZ = datetime.timezone(datetime.timedelta(hours=7))
+
+# --- Google Sheets Setup ---
+SHEETS_SCOPES = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+SPREADSHEET_ID = '1KXLAOn0aJnlkKnLBRkBKCx-t_MrbLuX3tGvSQ_c9tro'
+
+def get_sheet():
+    try:
+        creds = Credentials.from_service_account_file("credentials.json", scopes=SHEETS_SCOPES)
+        client = gspread.authorize(creds)
+        sheet = client.open_by_key(SPREADSHEET_ID).sheet1
+        return sheet
+    except Exception as e:
+        print(f"Google Sheets Error: {e}")
+        return None
+
+def get_member_sheet():
+    try:
+        creds = Credentials.from_service_account_file("credentials.json", scopes=SHEETS_SCOPES)
+        client = gspread.authorize(creds)
+        # ดึงแท็บ (worksheet) ชื่อ "สมาชิก"
+        sheet = client.open_by_key(SPREADSHEET_ID).worksheet("สมาชิก")
+        return sheet
+    except Exception as e:
+        print(f"Google Sheets Member Error: {e}")
+        return None
+
+def sync_user_to_sheet(student_id, name):
+    sheet = get_member_sheet()
+    if sheet:
+        try:
+            all_records = sheet.get_all_values()
+            next_index = len(all_records) if len(all_records) > 0 else 1
+            row = [str(next_index), student_id, name]
+            sheet.append_row(row)
+        except Exception as e:
+            print(f"Error appending user to sheet: {e}")
+
+def sync_booking_to_sheet(booking_id, student_name, student_id, room_name, booking_date, start_time, end_time, purpose, band_type, teacher_name):
+    sheet = get_sheet()
+    if sheet:
+        try:
+            # เพิ่มข้อมูลต่อท้าย (Append)
+            row = [str(booking_id), student_name, student_id, room_name, booking_date, start_time, end_time, purpose, band_type, teacher_name if teacher_name else ""]
+            sheet.append_row(row)
+        except Exception as e:
+            print(f"Error appending to sheet: {e}")
+
+def remove_booking_from_sheet(booking_id):
+    sheet = get_sheet()
+    if sheet:
+        try:
+            # ค้นหาแถวที่มี booking_id นี้ (ในคอลัมน์ 1)
+            cell = sheet.find(str(booking_id), in_column=1)
+            if cell:
+                sheet.delete_rows(cell.row)
+        except gspread.exceptions.CellNotFound:
+            pass # ถ้าไม่เจอก็ไม่เป็นไร
+        except Exception as e:
+            print(f"Error deleting from sheet: {e}")
+
 
 class PhoneUpdate(BaseModel):
     student_id: str
@@ -132,6 +194,10 @@ def cancel_booking(data: CancelRequest):
         if booking:
             session.delete(booking)
             session.commit()
+            
+            # ลบข้อมูลออกจาก Google Sheets
+            remove_booking_from_sheet(data.booking_id)
+            
             return {"status": "success", "message": "ยกเลิกการจองเรียบร้อยแล้ว"}
         return {"status": "error", "message": "ไม่พบข้อมูลการจอง"}
     except Exception as e:
@@ -515,6 +581,21 @@ def create_booking(data: BookingRequest):
         )
         session.add(new_booking)
         session.commit()
+        
+        # เพิ่มข้อมูลลง Google Sheets
+        sync_booking_to_sheet(
+            booking_id=new_booking.booking_id,
+            student_name=user.name,
+            student_id=user.student_id,
+            room_name=room.room_name,
+            booking_date=data.date,
+            start_time=data.start,
+            end_time=data.end,
+            purpose=data.purpose,
+            band_type=data.band,
+            teacher_name=data.teacher_name
+        )
+        
         return {"status": "success", "message": "จองห้องเรียบร้อยแล้ว!"}
     except Exception as e:
         session.rollback()
@@ -584,6 +665,10 @@ async def register(
         )
         session.add(new_user)
         session.commit()
+        
+        # ส่งข้อมูลเข้า Google Sheets (แท็บ สมาชิก)
+        sync_user_to_sheet(student_id=student_id, name=f"{first_name} {last_name}")
+        
         return {"status": "success", "message": "สมัครสมาชิกสำเร็จ! กรุณารอการตรวจสอบข้อมูล"}
     except Exception as e:
         session.rollback()
@@ -706,6 +791,10 @@ def admin_cancel_booking(data: CancelRequest):
         if booking:
             session.delete(booking)
             session.commit()
+            
+            # ลบข้อมูลออกจาก Google Sheets
+            remove_booking_from_sheet(data.booking_id)
+            
             return {"status": "success", "message": "ยกเลิกการจองโดย Admin เรียบร้อยแล้ว"}
         return {"status": "error", "message": "ไม่พบข้อมูลการจอง"}
     finally:
